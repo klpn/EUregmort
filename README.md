@@ -78,6 +78,6 @@ with average rates are prefixed `YA`. To plot a map of regions with higher
 average female mortality from neoplasms over the ages from 45 to 64.
 
 ```julia
-caprop_mapplot(nordnuts2, "F", "YC45-64", "C00-D48", ca2 = "pop",
+caprop_mapplot(nordnuts2, "F", "YA45-64", "C00-D48", ca2 = "pop",
 inframe = avgrate("Y45-49", "Y60-64"))
 ```
