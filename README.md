@@ -27,7 +27,7 @@ nordnuts2 = vcat(map((x)->nuts2ids(x), ["DK"; "FI"; "NO"; "SE"])...)
 
 Use this array to plot the correlation between female and male proportion of
 mortality from circulatory causes in the Nordic countries (see the
-`data/COD_2012_20170129_150552.csv`, based on Eurostat metadata, for
+`data/CL_ICD10_20170129_155451.csv`, based on Eurostat metadata, for
 information about causes of death):
 
 ```julia
