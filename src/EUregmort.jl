@@ -3,7 +3,7 @@ module EUregmort
 using DataFrames, PyCall, PyPlot
 @pyimport cartopy.io.shapereader as shpreader
 @pyimport cartopy.crs as ccrs
-export nuts2ids, caprop_regcmp, caprop_regsexplot, fourp, fivep, caprop_mapplot, cumrate
+export nuts2ids, caprop_regcmp, caprop_regsexplot, fourp, fivep, caprop_mapplot, avgrate
 datapath = normpath(Pkg.dir(), "EUregmort", "data")
 shpdatapath = normpath(datapath, "NUTS_2013_03M_SH", "data") 
 ycdr = readtable(normpath(datapath, "hlth_cd_ycdr2.csv"), nastrings = [":"])
@@ -13,7 +13,7 @@ ageseq = ["Y_LT1"; "Y1-4"; "Y5-9"; "Y10-14"; "Y15-19";
 	"Y20-24"; "Y25-29"; "Y30-34"; "Y35-39"; "Y40-44"; "Y45-49"; 
 	"Y50-54"; "Y55-59"; "Y60-64"; "Y65-69"; "Y70-74"; "Y75-79"; 
 	"Y80-84"; "Y85-89"; "Y90-94"; "Y_GE95"]
-agesplitter(age) = split(age,  ['Y'; 'C'; '_'; '-'], keep = false)
+agesplitter(age) = split(age,  ['Y'; 'A'; '_'; '-'], keep = false)
 
 function agealias(age)
 	aspl = agesplitter(age)
@@ -29,8 +29,8 @@ function agealias(age)
 		alias = "$(aspl[1])\u2013$(aspl[end])"
 	end
 
-	if (startswith(age, "YC") || startswith(age, "C"))
-		return "$alias kumulativ"
+	if (startswith(age, "YA") || startswith(age, "A"))
+		return "$alias genomsnitt över åldrar"
 	else
 		return alias
 	end
@@ -55,29 +55,29 @@ end
 dfarrmatch(col, arr) = map((x) -> in(x, arr), Vector(col))
 
 
-function cumrate(sage, eage)
+function avgrate(sage, eage)
 	sexframes = Dict()
 	sind = indexin([sage], ageseq)[1]
 	eind = indexin([eage], ageseq)[1]
 	agelist = ageseq[sind:eind]
 	if sage == "Y_LT1"
 		if eage == "Y_GE95"
-			agestr = "CTOTAL"
+			agestr = "ATOTAL"
 		else
-			agestr = "YC_LT$(parse(agesplitter(eage)[end])+1)"
+			agestr = "YA_LT$(parse(agesplitter(eage)[end])+1)"
 		end
 	else
 		if eage == "Y_GE95"
-			agestr = "YC_GE$(agesplitter(sage)[1])"
+			agestr = "YA_GE$(agesplitter(sage)[1])"
 		else
-			agestr = "YC$(agesplitter(sage)[1])-$(agesplitter(eage)[end])"
+			agestr = "YA$(agesplitter(sage)[1])-$(agesplitter(eage)[end])"
 		end
 	end
 	for sex in keys(sexaliases)
 		ycdr_sub = ycdr[((ycdr[:sex].==sex) & (dfarrmatch(ycdr[:age], agelist))),
 			 [4;6:size(ycdr)[2]]]
-		ycdr_sub_agg = aggregate(ycdr_sub, :icd10, sum)
-		aggregs = rename((x)->Symbol(replace(string(x), "_sum", "")),
+		ycdr_sub_agg = aggregate(ycdr_sub, :icd10, mean)
+		aggregs = rename((x)->Symbol(replace(string(x), "_mean", "")),
 			ycdr_sub_agg[:, 2:end])
 		aggl = size(ycdr_sub_agg)[1]
 		metaframe = DataFrame(unit = fill("RT", aggl), sex = fill(sex, aggl),
