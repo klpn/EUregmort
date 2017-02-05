@@ -17,7 +17,9 @@ agesplitter(age) = split(age,  ['Y'; 'C'; '_'; '-'], keep = false)
 
 function agealias(age)
 	aspl = agesplitter(age)
-	if aspl[1] == "LT1"
+	if aspl[1] == "TOTAL"
+		alias = "alla åldrar"
+	elseif aspl[1] == "LT1"
 		alias = "0"
 	elseif startswith(aspl[1], "LT")
 		alias = "0\u2013$(parse(aspl[end][3:end])-1)"
@@ -27,7 +29,7 @@ function agealias(age)
 		alias = "$(aspl[1])\u2013$(aspl[end])"
 	end
 
-	if startswith(age, "YC")
+	if (startswith(age, "YC") || startswith(age, "C"))
 		return "$alias kumulativ"
 	else
 		return alias
