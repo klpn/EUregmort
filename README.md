@@ -73,11 +73,11 @@ caprop_mapplot(nordnuts2, "M", "TOTAL", "I", ca2 = "pop")
 ```
 
 When plotting death rates, it is interesting to compare average rates over
-age groups. Use the function `avgrate` to define an alternative dataframe. Age groups
+age groups. Use the function `meanrate` to define an alternative dataframe. Age groups
 with average rates are prefixed `YA`. To plot a map of regions with higher
 average female mortality from neoplasms over the ages from 45 to 64.
 
 ```julia
-caprop_mapplot(nordnuts2, "F", "YA45-64", "C00-D48", ca2 = "pop",
-inframe = avgrate("Y45-49", "Y60-64"))
+caprop_mapplot(nordnuts2, "F", "YM45-64", "C00-D48", ca2 = "pop",
+inframe = meanrate("Y45-49", "Y60-64"))
 ```
