@@ -8,7 +8,7 @@ datapath = normpath(Pkg.dir(), "EUregmort", "data")
 shpdatapath = normpath(datapath, "NUTS_2013_03M_SH", "data") 
 ycdr = readtable(normpath(datapath, "hlth_cd_ycdr2.csv"), nastrings = [":"])
 nuts = readtable(normpath(datapath, "NUTS_AT_2013.csv"))
-nids = convert(Array, dropna(nuts[:NUTS_ID]))
+nids = convert(Array, collect(skipmissing(nuts[:NUTS_ID])))
 ageseq = ["Y_LT1"; "Y1-4"; "Y5-9"; "Y10-14"; "Y15-19"; 
 	"Y20-24"; "Y25-29"; "Y30-34"; "Y35-39"; "Y40-44"; "Y45-49"; 
 	"Y50-54"; "Y55-59"; "Y60-64"; "Y65-69"; "Y70-74"; "Y75-79"; 
@@ -131,18 +131,18 @@ end
 perc_round(value) = replace("$(round(value, 4))", ".", ",")
 fourp(prop) = 
 	[
-	Dict("col" => "lightyellow", "value" => percentile(prop, 1/4*100));
-	Dict("col" => "yellow", "value" => percentile(prop, 2/4*100));
-	Dict("col" => "tomato", "value" => percentile(prop, 3/4*100));
-	Dict("col" => "red", "value" => percentile(prop, 100))
+	Dict("col" => "lightyellow", "value" => quantile(prop, 1/4));
+	Dict("col" => "yellow", "value" => quantile(prop, 2/4));
+	Dict("col" => "tomato", "value" => quantile(prop, 3/4));
+	Dict("col" => "red", "value" => quantile(prop, 1))
 	]
 fivep(prop) = 
 	[
-	Dict("col" => "lightyellow", "value" => percentile(prop, 1/5*100));
-	Dict("col" => "yellow", "value" => percentile(prop, 2/5*100));
-	Dict("col" => "orange", "value" => percentile(prop, 3/5*100));
-	Dict("col" => "tomato", "value" => percentile(prop, 4/5*100));
-	Dict("col" => "red", "value" => percentile(prop, 100))
+	Dict("col" => "lightyellow", "value" => quantile(prop, 1/5));
+	Dict("col" => "yellow", "value" => quantile(prop, 2/5));
+	Dict("col" => "orange", "value" => quantile(prop, 3/5));
+	Dict("col" => "tomato", "value" => quantile(prop, 4/5));
+	Dict("col" => "red", "value" => quantile(prop, 1))
 	]
 
 function caprop_mapplot(nutsregs, sex, age, ca1; ca2 = "A-R_V-Y", time_geo = 2013,
@@ -158,7 +158,7 @@ function caprop_mapplot(nutsregs, sex, age, ca1; ca2 = "A-R_V-Y", time_geo = 201
 	ax = plt[:axes](projection = proj)
 	prop = pframe[:value]
 	propdict = Dict(zip(regstrings, prop))
-	percentiles = percfunc(prop) 
+	quantiles = percfunc(prop) 
 	boundlist = []
 	fcolor = "blue"
 	for region_rec in region_shp[:records]()
@@ -169,9 +169,9 @@ function caprop_mapplot(nutsregs, sex, age, ca1; ca2 = "A-R_V-Y", time_geo = 201
 				boundlist[end][3]])
 			ymean = mean([boundlist[end][2];
 				boundlist[end][4]])
-			for percentile in percentiles
-				if propdict[nid] <= percentile["value"]
-					fcolor = percentile["col"]
+			for quantile in quantiles
+				if propdict[nid] <= quantile["value"]
+					fcolor = quantile["col"]
 					break
 				end
 			end
@@ -188,15 +188,15 @@ function caprop_mapplot(nutsregs, sex, age, ca1; ca2 = "A-R_V-Y", time_geo = 201
 	ax[:set_ylim](yminimum, ymaximum)
 	percpatches = []
 	perclabels = []
-	for (i, percentile) in enumerate(percentiles)
+	for (i, quantile) in enumerate(quantiles)
 		percpatch = matplotlib[:patches][:Rectangle]((0, 0), 1, 1,
-			facecolor = percentile["col"])
+			facecolor = quantile["col"])
 		percpatches = vcat(percpatches, percpatch)
 		if i == 1
 			perclabel = *("\u2265", perc_round(minimum(prop)),
-				"\n\u2264", perc_round(percentile["value"]))
+				"\n\u2264", perc_round(quantile["value"]))
 		else
-			perclabel = *("\u2264", perc_round(percentile["value"]))
+			perclabel = *("\u2264", perc_round(quantile["value"]))
 		end
 		perclabels = vcat(perclabels, perclabel)
 	end
