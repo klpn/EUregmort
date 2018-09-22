@@ -1,19 +1,27 @@
 module EUregmort
 
-using DataFrames, PyCall, PyPlot
-@pyimport cartopy.io.shapereader as shpreader
-@pyimport cartopy.crs as ccrs
+using CSV, DataFrames, PyCall, PyPlot, Statistics
+
+const shpreader = PyNULL()
+const ccrs = PyNULL()
+
+function __init__()
+	copy!(shpreader, pyimport("cartopy.io.shapereader"))
+	copy!(ccrs, pyimport("cartopy.crs"))
+end
+
 export nuts2ids, caprop_regcmp, caprop_regsexplot, fourp, fivep, caprop_mapplot, meanrate
-datapath = normpath(Pkg.dir(), "EUregmort", "data")
+mainpath = normpath(@__DIR__, "..")
+datapath = normpath(mainpath, "data")
 shpdatapath = normpath(datapath, "NUTS_2013_03M_SH", "data") 
-ycdr = readtable(normpath(datapath, "hlth_cd_ycdr2.csv"), nastrings = [":"])
-nuts = readtable(normpath(datapath, "NUTS_AT_2013.csv"))
+ycdr = CSV.read(normpath(datapath, "hlth_cd_ycdr2.csv"); missingstring = ":", rows_for_type_detect = 200)
+nuts = CSV.read(normpath(datapath, "NUTS_AT_2013.csv"); rows_for_type_detect = 200)
 nids = convert(Array, collect(skipmissing(nuts[:NUTS_ID])))
 ageseq = ["Y_LT1"; "Y1-4"; "Y5-9"; "Y10-14"; "Y15-19"; 
 	"Y20-24"; "Y25-29"; "Y30-34"; "Y35-39"; "Y40-44"; "Y45-49"; 
 	"Y50-54"; "Y55-59"; "Y60-64"; "Y65-69"; "Y70-74"; "Y75-79"; 
 	"Y80-84"; "Y85-89"; "Y90-94"; "Y_GE95"]
-agesplitter(age) = split(age,  ['Y'; 'M'; '_'; '-'], keep = false)
+agesplitter(age) = split(age,  ['Y'; 'M'; '_'; '-'], keepempty = false)
 
 function agealias(age)
 	aspl = agesplitter(age)
@@ -96,8 +104,8 @@ function ycdr_regcmp(nutsregs, sex, age, icd10, time_geo, inframe)
 		inframe_sub[reg] = inframe[reg]
 	end
 	inframe_long = stack(inframe_sub, nutsregs)
-	inframe_long[((inframe_long[:sex].==sex) & (inframe_long[:age].==age)
-		& (inframe_long[:icd10].==icd10) & (inframe_long[:time_geo].==time_geo)), :]
+	inframe_long[((inframe_long[:sex].==sex) .& (inframe_long[:age].==age)
+		.& (inframe_long[:icd10].==icd10) .& (inframe_long[:time_geo].==time_geo)), :]
 end
 
 function caprop_regcmp(nutsregs, sex, age, ca1, ca2, time_geo, inframe)
@@ -128,7 +136,7 @@ function caprop_regsexplot(nutsregs, age, ca1; ca2 = "A-R_V-Y", time_geo = 2013,
 		"$(agealias(age))"))
 end
 
-perc_round(value) = replace("$(round(value, 4))", ".", ",")
+perc_round(value) = replace("$(round(value; digits=4))", "." => ",")
 fourp(prop) = 
 	[
 	Dict("col" => "lightyellow", "value" => quantile(prop, 1/4));
@@ -150,11 +158,11 @@ function caprop_mapplot(nutsregs, sex, age, ca1; ca2 = "A-R_V-Y", time_geo = 201
 		shapefname = normpath(shpdatapath, "NUTS_RG_03M_2013_3034.shp"),
 		inframe = ycdr)
 	pframe = caprop_regcmp(nutsregs, sex, age, ca1, ca2, time_geo, inframe)
-	region_shp = shpreader.Reader(shapefname)
+	region_shp = shpreader[:Reader](shapefname)
 	regstrings = map((x)->string(x), nutsregs)
-	proj = ccrs.LambertConformal(central_longitude = 10, central_latitude = 52,
+	proj = ccrs[:LambertConformal](central_longitude = 10, central_latitude = 52,
 		standard_parallels = (35,65), false_easting = 4000000,
-		false_northing = 2800000, globe = ccrs.Globe(ellipse = "GRS80"))
+		false_northing = 2800000, globe = ccrs[:Globe](ellipse = "GRS80"))
 	ax = plt[:axes](projection = proj)
 	prop = pframe[:value]
 	propdict = Dict(zip(regstrings, prop))
